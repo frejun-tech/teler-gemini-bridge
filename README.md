@@ -31,9 +31,8 @@ Teler is a programmable voice API by FreJun. It handles carriers, phone numbers,
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `GOOGLE_API_KEY` | Your Google API key | Required |
-| `GEMINI_MODEL` | Gemini model to use | gemini-2.5-flash-preview-native-audio-dialog |
-| `GEMINI_SYSTEM_MESSAGE` | System prompt for Gemini | You are a friendly and helpful AI voice assistant... |
-| `GEMINI_AUDIO_CHUNK_COUNT` | Audio chunks to buffer before sending | 5 |
+| `GEMINI_MODEL` | Gemini model to use | gemini-3.1-flash-live-preview |
+| `GEMINI_AUDIO_CHUNK_COUNT` | Audio chunks to buffer before sending | 20 |
 | `SERVER_DOMAIN` | Your ngrok domain (auto-detected) | Required |
 | `TELER_API_KEY` | Your Teler API key | Required |
 | `NGROK_AUTHTOKEN` | Your ngrok auth token | Required |

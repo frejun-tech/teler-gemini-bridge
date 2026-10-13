@@ -13,6 +13,7 @@ from fastapi.websockets import WebSocketState
 from google import genai
 from google.genai import types
 from pydantic import BaseModel
+from teler import AsyncClient, CallFlow
 
 from app.core.base_prompt import GEMINI_SYSTEM_MESSAGE
 from app.core.config import settings
@@ -43,15 +44,15 @@ async def stream_flow(payload: CallFlowRequest):
             detail="GOOGLE_API_KEY not configured"
         )
 
-    stream_flow = {
-        "action": "stream",
-        "ws_url": f"wss://{settings.server_domain}/api/v1/calls/media-stream",
-        "chunk_size": 500,
-        "sample_rate": "16k",
-        "record": True
-    }
-
-    return JSONResponse(stream_flow)
+    ws_url = f"wss://{settings.server_domain}/api/v1/calls/media-stream"
+    return JSONResponse(
+        CallFlow.stream(
+            ws_url=ws_url,
+            sample_rate="16k",
+            chunk_size=500,
+            record=True,
+        )
+    )
 
 @router.post("/initiate-call", status_code=status.HTTP_200_OK)
 async def initiate_call(call_request: CallRequest):
@@ -59,22 +60,20 @@ async def initiate_call(call_request: CallRequest):
     Initiate a call using Teler SDK.
     """
     try:
-        from app.utils.teler_client import TelerClient
-        
         if not settings.google_api_key:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="GOOGLE_API_KEY not configured"
             )
-        
-        teler_client = TelerClient(api_key=settings.teler_api_key)
-        call = await teler_client.create_call(
-            from_number=call_request.from_number,
-            to_number=call_request.to_number,
-            flow_url=f"https://{settings.server_domain}/api/v1/calls/flow",
-            status_callback_url=f"https://{settings.server_domain}/api/v1/webhooks/receiver",
-            record=True,
-        )
+
+        async with AsyncClient(api_key=settings.teler_api_key, timeout=10) as client:
+            call = await client.voice.calls.create(
+                from_number=call_request.from_number,
+                to_number=call_request.to_number,
+                flow_url=f"https://{settings.server_domain}/api/v1/calls/flow",
+                status_callback_url=f"https://{settings.server_domain}/api/v1/webhooks/receiver",
+                record=True,
+            )
         logger.info(f"Call created: {call}")
         return JSONResponse(content={"success": True, "call id": call.id})
     except Exception as e:
